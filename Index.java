@@ -3,40 +3,40 @@ package ru.surf;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.*; //Использовать "*" нехорошо, из-за этого неясно какие именно классы мы собираемся использовать
 import java.util.concurrent.*;
 import java.util.stream.Stream;
 
 
 public class Index {
-    TreeMap<String, List<Pointer>> invertedIndex;
+    TreeMap<String, List<Pointer>> invertedIndex; //Поля принято делать приватными
 
     ExecutorService pool;
 
     public Index(ExecutorService pool) {
         this.pool = pool;
-        invertedIndex = new TreeMap<>();
+        invertedIndex = new TreeMap<>(); //Если обращаемся к своему полю, лучше всегда использовать this для однородности
     }
 
     public void indexAllTxtInPath(String pathToDir) throws IOException {
-        Path of = Path.of(pathToDir);
+        Path of = Path.of(pathToDir); //Название "of" мало о чём говорит, лучше тогда уж "path"
 
-        BlockingQueue<Path> files = new ArrayBlockingQueue<>(2);
+        BlockingQueue<Path> files = new ArrayBlockingQueue<>(2);//Почему тут вообще используется ArrayBlockingQueue?
 
         try (Stream<Path> stream = Files.list(of)) {
-            stream.forEach(files::add);
+            stream.forEach(files::add); //У очереди выставлен размер 2, это так не будет работать, если файлов больше 2х из-за размера очереди
         }
 
-        pool.submit(new IndexTask(files));
-        pool.submit(new IndexTask(files));
-        pool.submit(new IndexTask(files));
+        pool.submit(new IndexTask(files)); //Почему именно 3 раза? Почему нельзя было в цикле создавать?
+        pool.submit(new IndexTask(files)); //Если мы не ждём никакого результата выполнения, то можно использовать execute вместо submit
+        pool.submit(new IndexTask(files)); //Вообще у нас нет никакого способа узнать - завершились ли таски
     }
 
     public TreeMap<String, List<Pointer>> getInvertedIndex() {
         return invertedIndex;
     }
 
-    public List<Pointer> GetRelevantDocuments(String term) {
+    public List<Pointer> GetRelevantDocuments(String term) { //Названия методов с маленькой буквы
         return invertedIndex.get(term);
     }
 
@@ -70,7 +70,7 @@ public class Index {
         @Override
         public void run() {
             try {
-                Path take = queue.take();
+                Path take = queue.take(); //Название переменной take мало о чём говорит, лучше просто path
                 List<String> strings = Files.readAllLines(take);
 
                 strings.stream().flatMap(str -> Stream.of(str.split(" "))).forEach(word -> invertedIndex.compute(word, (k, v) -> {
@@ -81,7 +81,7 @@ public class Index {
                         if (v.stream().noneMatch(pointer -> pointer.filePath.equals(take.toString()))) {
                             pointers.add(new Pointer(1, take.toString()));
                         }
-
+                        //Эти два блока можно объединить в if else
                         v.forEach(pointer -> {
                             if (pointer.filePath.equals(take.toString())) {
                                 pointer.count = pointer.count + 1;
@@ -96,7 +96,7 @@ public class Index {
                 }));
 
             } catch (InterruptedException | IOException e) {
-                throw new RuntimeException();
+                throw new RuntimeException(); //Не надо выкидывать пустой RuntimeException, передай в него ошибку, которая пришла: RuntimeException(e)
             }
         }
     }
