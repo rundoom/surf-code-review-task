@@ -21,7 +21,7 @@ public class Index {
     public void indexAllTxtInPath(String pathToDir) throws IOException {
         Path of = Path.of(pathToDir); //Название "of" мало о чём говорит, лучше тогда уж "path"
 
-        BlockingQueue<Path> files = new ArrayBlockingQueue<>(2);//Почему тут вообще используется ArrayBlockingQueue?
+        BlockingQueue<Path> files = new ArrayBlockingQueue<>(2);
 
         try (Stream<Path> stream = Files.list(of)) {
             stream.forEach(files::add); //У очереди выставлен размер 2, это так не будет работать, если файлов больше 2х из-за размера очереди
